@@ -56,7 +56,7 @@ export default async function SalesPage() {
             return (
               <div key={monthYear} className="bg-white rounded-lg shadow overflow-hidden">
                 <div className="bg-blue-600 px-4 py-2">
-                  <h3 className="text-lg font-medium text-black">
+                  <h3 className="text-lg font-medium text-white">
                     {monthName} {year}
                   </h3>
                 </div>
