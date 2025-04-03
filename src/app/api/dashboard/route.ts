@@ -1,117 +1,101 @@
 import { NextResponse } from 'next/server';
-import { getStores, getSales, getStorePerformance } from '../../../lib/database';
+import { supabase } from '../../../lib/supabaseClient';
 
-// GET endpoint to fetch all dashboard data
 export async function GET(request: Request) {
   try {
-    // Get the URL and params
+    // Get URL parameters
     const url = new URL(request.url);
     const storeId = url.searchParams.get('storeId');
+    const item = url.searchParams.get('item');
     const startDate = url.searchParams.get('startDate');
     const endDate = url.searchParams.get('endDate');
+    const page = parseInt(url.searchParams.get('page') || '1');
+    const pageSize = parseInt(url.searchParams.get('pageSize') || '50');
+    const view = url.searchParams.get('view') || 'detailed'; // 'detailed', 'monthly', or 'items'
     
-    // Fetch all required data
-    const [stores, sales, storePerformance] = await Promise.all([
-      getStores(),
-      getSales(storeId || undefined),   // Not used directly, but kept for API completeness
-      getStorePerformance()
-    ]);
+    // Calculate pagination
+    const from = (page - 1) * pageSize;
+    const to = from + pageSize - 1;
     
-    // Filter sales by date if needed
-    let filteredSales = sales;
-    if (startDate || endDate) {
-      filteredSales = sales.filter(sale => {
-        const saleDate = new Date(sale.month);
+    // Select from the appropriate view based on the 'view' parameter
+    let query;
+    
+    if (view === 'monthly') {
+      query = supabase
+        .from('monthly_sales_summary')
+        .select('*');
         
-        if (startDate && endDate) {
-          return saleDate >= new Date(startDate) && saleDate <= new Date(endDate);
-        } else if (startDate) {
-          return saleDate >= new Date(startDate);
-        } else if (endDate) {
-          return saleDate <= new Date(endDate);
-        }
-        
-        return true;
-      });
-    }
-    
-    // Create summary statistics
-    const totalSales = filteredSales.length;
-    const totalItems = filteredSales.reduce((sum, sale) => sum + sale.quantity, 0);
-    const totalRevenue = filteredSales.reduce((sum, sale) => sum + (sale.quantity * sale.price), 0);
-    
-    // Group data by month for time series
-    const salesByMonth: Record<string, { count: number; items: number; revenue: number }> = {};
-    
-    filteredSales.forEach(sale => {
-      const date = new Date(sale.month);
-      const monthYear = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-      
-      if (!salesByMonth[monthYear]) {
-        salesByMonth[monthYear] = { count: 0, items: 0, revenue: 0 };
+      if (storeId) {
+        query = query.eq('store_id', storeId);
       }
       
-      salesByMonth[monthYear].count += 1;
-      salesByMonth[monthYear].items += sale.quantity;
-      salesByMonth[monthYear].revenue += sale.quantity * sale.price;
-    });
+    } else if (view === 'items') {
+      query = supabase
+        .from('item_sales_summary')
+        .select('*');
+        
+      if (item) {
+        query = query.ilike('item_name', `%${item}%`);
+      }
+      
+    } else {
+      // Default detailed view
+      query = supabase
+        .from('store_sales_view')
+        .select('*');
+        
+      // Apply filters if provided
+      if (storeId) {
+        query = query.eq('store_id', storeId);
+      }
+      
+      if (item) {
+        query = query.ilike('item_name', `%${item}%`);
+      }
+      
+      // Date filtering
+      if (startDate) {
+        query = query.gte('month', startDate);
+      }
+      
+      if (endDate) {
+        query = query.lte('month', endDate);
+      }
+    }
     
-    // Sort months chronologically
-    const sortedMonthsData = Object.entries(salesByMonth)
-      .sort(([monthA], [monthB]) => monthA.localeCompare(monthB))
-      .map(([month, data]) => ({
-        month,
-        ...data
-      }));
+    // Add pagination for detailed view
+    if (view === 'detailed') {
+      query = query.order('month', { ascending: false })
+                  .range(from, to);
+    }
     
-    // Product performance
-    const productPerformance = Object.entries(
-      filteredSales.reduce<Record<string, { quantity: number; revenue: number }>>(
-        (acc, sale) => {
-          if (!acc[sale.item_name]) {
-            acc[sale.item_name] = { quantity: 0, revenue: 0 };
-          }
-          
-          acc[sale.item_name].quantity += sale.quantity;
-          acc[sale.item_name].revenue += sale.quantity * sale.price;
-          
-          return acc;
-        },
-        {}
-      )
-    ).map(([item, data]) => ({
-      item,
-      ...data
-    })).sort((a, b) => b.revenue - a.revenue);
+    // Execute the query
+    const { data, error, count } = await query;
     
-    // Construct response
-    const dashboardData = {
-      summary: {
-        totalStores: stores.length,
-        totalSales,
-        totalItems,
-        totalRevenue,
-      },
-      stores: stores.map(store => ({
-        id: store.id,
-        name: store.name,
-        location: store.location,
-      })),
-      timeSeries: sortedMonthsData,
-      products: productPerformance,
-      storePerformance: storePerformance.map(store => ({
-        id: store.store_id,
-        name: store.store_name,
-        sales: store.total_quantity,
-        revenue: store.total_revenue,
-      })),
-    };
+    if (error) {
+      throw error;
+    }
     
-    return NextResponse.json(dashboardData);
+    // Return the data with pagination info for detailed view
+    if (view === 'detailed') {
+      return NextResponse.json({
+        data,
+        pagination: {
+          page,
+          pageSize,
+          total: count || 0,
+          totalPages: count ? Math.ceil(count / pageSize) : 0
+        }
+      });
+    } else {
+      // For summary views, just return the data
+      return NextResponse.json(data);
+    }
+    
   } catch (error) {
-    console.error('Dashboard API error:', error);
+    console.error('API error:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch dashboard data' },
+      { error: 'Failed to fetch store sales data' },
       { status: 500 }
     );
   }
