@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import StoreForm from '../../../components/storeForm';
+import AuthCheck from '../../../components/authCheck'
 import { Store } from '../../../types/database';
 
 export default function AddStorePage() {
@@ -21,6 +22,7 @@ export default function AddStorePage() {
   };
 
   return (
+    <AuthCheck>
     <div className="container mx-auto py-8 px-4">
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-bold text-gray-600">Add New Store</h1>
@@ -40,5 +42,6 @@ export default function AddStorePage() {
 
       <StoreForm onSuccess={handleSuccess} />
     </div>
+    </AuthCheck>
   );
 }

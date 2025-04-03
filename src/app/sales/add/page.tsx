@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import SalesForm from '../../../components/salesForm';
+import AuthCheck from '../../../components/authCheck'
 import { Sale } from '../../../types/database';
 
 export default function AddSalePage() {
@@ -21,6 +22,7 @@ export default function AddSalePage() {
   };
 
   return (
+    <AuthCheck>
     <div className="container mx-auto py-8 px-4">
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-bold text-gray-600">Record Sales</h1>
@@ -40,5 +42,6 @@ export default function AddSalePage() {
 
       <SalesForm onSuccess={handleSuccess} />
     </div>
+    </AuthCheck>
   );
 }
