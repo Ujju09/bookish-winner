@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getStores, getSales, getMonthlySales, getTopItems, getStorePerformance } from '../../../lib/database';
+import { getStores, getSales, getStorePerformance } from '../../../lib/database';
 
 // GET endpoint to fetch all dashboard data
 export async function GET(request: Request) {
@@ -11,11 +11,9 @@ export async function GET(request: Request) {
     const endDate = url.searchParams.get('endDate');
     
     // Fetch all required data
-    const [stores, sales, _, __, storePerformance] = await Promise.all([
+    const [stores, sales, storePerformance] = await Promise.all([
       getStores(),
-      getSales(storeId || undefined),
-      getMonthlySales(), // Not used directly, but kept for API completeness
-      getTopItems(),     // Not used directly, but kept for API completeness
+      getSales(storeId || undefined),   // Not used directly, but kept for API completeness
       getStorePerformance()
     ]);
     

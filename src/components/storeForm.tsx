@@ -45,10 +45,15 @@ const StoreForm: React.FC<StoreFormProps> = ({ onSuccess }) => {
     setError(null);
     
     try {
-      // Filter out empty strings for optional fields
-      const formData = Object.fromEntries(
-        Object.entries(data).filter(([_, value]) => value !== '')
-      );
+      // Create a clean version of the data with required fields and optional fields that are not empty
+      const formData = {
+        name: data.name,  // Required field
+        location: data.location,  // Required field
+        // Only include optional fields if they have values
+        ...(data.manager && data.manager !== '' ? { manager: data.manager } : {}),
+        ...(data.phone && data.phone !== '' ? { phone: data.phone } : {}),
+        ...(data.email && data.email !== '' ? { email: data.email } : {})
+      } as Omit<Store, 'id' | 'created_at'>;
       
       const newStore = await createStore(formData);
       

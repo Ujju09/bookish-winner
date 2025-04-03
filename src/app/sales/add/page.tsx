@@ -1,14 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import SalesForm from '../../../components/salesForm';
 import AuthCheck from '../../../components/authCheck'
 import { Sale } from '../../../types/database';
 
 export default function AddSalePage() {
-  const router = useRouter();
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const handleSuccess = (sales: Sale[]) => {

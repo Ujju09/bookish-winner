@@ -43,7 +43,7 @@ const SalesForm: React.FC<SalesFormProps> = ({ onSuccess, storeId }) => {
     };
 
     fetchStores();
-  }, [storeId]);
+  }, [storeId, selectedStoreId]);
 
   const handleStoreChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setSelectedStoreId(e.target.value);
@@ -227,7 +227,7 @@ const SalesForm: React.FC<SalesFormProps> = ({ onSuccess, storeId }) => {
             </div>
             
             {/* Dynamic entry rows */}
-            {salesEntries.map((entry, index) => (
+            {salesEntries.map((entry) => (
               <div key={entry.id} className="grid grid-cols-12 gap-4 mb-3 items-center">
                 <div className="col-span-5">
                   <input
@@ -287,7 +287,7 @@ const SalesForm: React.FC<SalesFormProps> = ({ onSuccess, storeId }) => {
               <div className="w-1/3">
                 <div className="flex justify-between font-medium">
                   <span>Order Total:</span>
-                  <span>${calculateTotal().toFixed(2)}</span>
+                  <span>₹{calculateTotal().toFixed(2)}</span>
                 </div>
               </div>
             </div>

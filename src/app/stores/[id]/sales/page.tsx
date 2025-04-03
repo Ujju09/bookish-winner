@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, use } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import SalesForm from '../../../../components/salesForm';
 import { getStore, getSales } from '../../../../lib/database';
@@ -11,7 +10,6 @@ export default function StoreSalesPage({ params }: { params: Promise<{ id: strin
   const resolvedParams = use(params);
   const storeId = resolvedParams.id;
   
-  const router = useRouter();
   const [store, setStore] = useState<Store | null>(null);
   const [sales, setSales] = useState<Sale[]>([]);
   const [isLoading, setIsLoading] = useState(true);
